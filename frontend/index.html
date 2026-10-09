@@ -8,8 +8,7 @@
   :root{--bg:#0d0e1c;--card:#161833;--line:#2c2f55;--txt:#e8e9f5;--mut:#9a9cc0;--pur:#8b5cf6;--grn:#34d399;--red:#f87171;--gry:#94a3b8}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--txt);font-family:system-ui,Segoe UI,Roboto,sans-serif;padding:18px;max-width:1300px;margin:auto}
-  h1{font-size:22px;margin:0} h2{font-size:17px;margin:0 0 4px} h3{font-size:14px;margin:0 0 6px;color:var(--mut);font-weight:600}
-  .sub{color:var(--mut);margin:4px 0 14px;font-size:14px}
+  h1{font-size:22px;margin:0 0 14px} h2{font-size:17px;margin:0 0 4px} h3{font-size:14px;margin:0 0 6px;color:var(--mut);font-weight:600}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
   .controls{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
   label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:4px}
@@ -28,7 +27,7 @@
   th{color:var(--mut);font-weight:600}
   .badge{padding:2px 8px;border-radius:99px;font-size:12px;font-weight:700;color:#06121a}
   .c-constructive{background:var(--grn)} .c-destructive{background:var(--red)} .c-neutral{background:var(--gry)}
-  .note{font-size:13px;color:var(--mut);line-height:1.5}
+  .note{font-size:13px;color:var(--mut);line-height:1.5;margin-top:6px}
   section{margin-top:16px}
   .legend span{display:inline-block;margin-right:14px;font-size:12px;color:var(--mut)}
   .dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
@@ -37,12 +36,11 @@
 </head>
 <body>
 <h1>Quantum-Enhanced Last-Mile Route Optimisation</h1>
-<div class="sub">Classical side builds routes and checks constraints (capacity, time windows, traffic). QAOA (Qiskit) re-orders groups of stops; interference decides which routes survive.</div>
 
 <div class="card controls">
   <label>Data<select id="mode"><option value="pickup">Pickup (real time windows)</option><option value="delivery">Delivery</option></select></label>
   <label>Orders<input id="n_orders" type="number" min="8" max="40" value="20"></label>
-  <label>Vehicles<input id="n_vehicles" type="number" min="1" max="10" value="4"></label>
+  <label>Vehicles<input id="n_vehicles" type="number" min="1" max="20" value="4"></label>
   <label>Capacity<input id="capacity" type="number" min="2" max="20" value="8"></label>
   <label>Traffic<select id="traffic"><option>free</option><option selected>normal</option><option>peak</option></select></label>
   <label>Quantum window<select id="k"><option value="3">3 stops (9 qubits, fast)</option><option value="4">4 stops (16 qubits, slow)</option></select></label>
@@ -63,28 +61,24 @@
       <div><h3 id="t_two_opt"></h3><svg id="m_two_opt" viewBox="0 0 420 320"></svg></div>
       <div><h3 id="t_hybrid"></h3><svg id="m_hybrid" viewBox="0 0 420 320"></svg></div>
     </div>
-    <div class="note" style="margin-top:8px">Each colour is one vehicle. D = depot, numbers = visiting order. The hybrid starts from the nearest-neighbour routes and keeps a QAOA change only if the exact simulator confirms it is cheaper.</div>
   </section>
 
-  <section class="card">
+  <section class="card" id="quantum">
     <h2>2. Constructive and destructive interference inside QAOA</h2>
-    <div class="note">QAOA starts with all answers in superposition. Every answer receives many "paths" (complex arrows). Where arrows point the same way they add up (<b style="color:var(--grn)">constructive</b>, probability rises). Where they point against each other they cancel (<b style="color:var(--red)">destructive</b>, probability falls). Valid routes are boosted, invalid bit-strings are suppressed.</div>
     <div class="controls" style="margin:10px 0">
       <label>Quantum window<select id="win"></select></label>
-      <label>Tour (for arrow diagram)<select id="tour"></select></label>
+      <label>Tour<select id="tour"></select></label>
     </div>
     <div class="grid2">
-      <div><h3>Probability of each valid tour: uniform start vs after QAOA</h3><svg id="c_bars" viewBox="0 0 560 280"></svg>
-        <div class="legend"><span><i class="dot" style="background:#475569"></i>uniform start</span><span><i class="dot" style="background:var(--grn)"></i>after QAOA, constructive</span><span><i class="dot" style="background:var(--red)"></i>destructive</span></div></div>
-      <div><h3>Probability of valid vs invalid answers after each layer</h3><svg id="c_layers" viewBox="0 0 560 280"></svg>
-        <div class="legend"><span><i class="dot" style="background:var(--grn)"></i>valid tours (amplified)</span><span><i class="dot" style="background:var(--red)"></i>invalid bit-strings (cancelled)</span></div></div>
-      <div><h3 id="rose_title">Arrow directions of all paths reaching the selected tour</h3><svg id="c_rose" viewBox="0 0 560 280"></svg>
+      <div><h3>Probability of each valid tour</h3><svg id="c_bars" viewBox="0 0 560 280"></svg>
+        <div class="legend"><span><i class="dot" style="background:#475569"></i>uniform start</span><span><i class="dot" style="background:var(--grn)"></i>after QAOA: constructive</span><span><i class="dot" style="background:var(--red)"></i>destructive</span></div></div>
+      <div><h3>Valid vs invalid answers, layer by layer</h3><svg id="c_layers" viewBox="0 0 560 280"></svg>
+        <div class="legend"><span><i class="dot" style="background:var(--grn)"></i>valid tours</span><span><i class="dot" style="background:var(--red)"></i>invalid answers</span></div></div>
+      <div><h3 id="rose_title">Interference arrows</h3><svg id="c_rose" viewBox="0 0 560 280"></svg>
         <div class="note" id="rose_note"></div></div>
-      <div><h3>QAOA optimiser: expected cost per iteration</h3><svg id="c_hist" viewBox="0 0 560 280"></svg>
-        <div class="note" id="hist_note"></div></div>
+      <div><h3>QAOA optimiser cost</h3><svg id="c_hist" viewBox="0 0 560 280"></svg></div>
     </div>
     <div style="margin-top:12px;overflow-x:auto"><table id="tour_table"></table></div>
-    <div class="note" style="margin-top:6px">Interference factor = |sum of paths|&sup2; / sum of |path|&sup2;. Above 1 = constructive, below 1 = destructive.</div>
   </section>
 </div>
 
@@ -94,23 +88,46 @@ const COLORS = ["#60a5fa","#f472b6","#fbbf24","#34d399","#a78bfa","#fb923c","#22
 const TYPE_COLOR = {constructive:"#34d399", destructive:"#f87171", neutral:"#94a3b8"};
 let DATA = null, timer = null;
 
-const hhmm = m => String(Math.floor(m/60)).padStart(2,"0") + ":" + String(Math.round(m%60)).padStart(2,"0");
 const pct = (x, d=1) => (x*100).toFixed(d) + "%";
 const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
 
-async function run(){
+const LIMITS = {n_orders:[8,40,20], n_vehicles:[1,20,4], capacity:[2,20,8], reps:[1,4,3], seed:[0,2147483647,42]};
+
+function readControls(){
   const q = new URLSearchParams();
-  ["mode","n_orders","n_vehicles","capacity","traffic","k","reps","seed"].forEach(id => q.set(id, $(id).value));
+  ["mode","traffic","k"].forEach(id => q.set(id, $(id).value));
+  Object.keys(LIMITS).forEach(id => {
+    const [lo, hi, def] = LIMITS[id];
+    let v = parseInt($(id).value, 10);
+    if(isNaN(v)) v = def;
+    v = Math.max(lo, Math.min(hi, v));
+    $(id).value = v;
+    q.set(id, v);
+  });
+  return q;
+}
+
+function errText(body){
+  const d = body && body.detail;
+  if(Array.isArray(d)) return d.map(x => x.msg || JSON.stringify(x)).join("; ");
+  return d || "Server error";
+}
+
+async function run(){
+  const q = readControls();
   const btn = $("run"), st = $("status");
   btn.disabled = true; st.className = "";
   const t0 = Date.now();
-  timer = setInterval(() => { st.textContent = "Running QAOA... " + Math.round((Date.now()-t0)/1000) + "s (first run also loads the dataset)"; }, 500);
+  timer = setInterval(() => { st.textContent = "Running... " + Math.round((Date.now()-t0)/1000) + "s"; }, 500);
   try{
     const r = await fetch("/api/optimize?" + q.toString());
-    const body = await r.json();
-    if(!r.ok) throw new Error(body.detail || "Server error");
+    let body = null;
+    try{ body = await r.json(); }catch(e){ throw new Error("Server error (see terminal)"); }
+    if(!r.ok) throw new Error(errText(body));
     render(body);
-    st.textContent = "Done in " + Math.round((Date.now()-t0)/1000) + "s | day " + body.summary.day + " | " + body.summary.orders + " orders";
+    const u = body.summary;
+    $("n_vehicles").value = u.vehicles; $("capacity").value = u.capacity; $("n_orders").value = u.orders;
+    st.textContent = "Done in " + Math.round((Date.now()-t0)/1000) + "s" + (u.truncated ? " (time limit reached)" : "");
   }catch(e){
     st.className = "err"; st.textContent = "Error: " + e.message;
   }finally{
@@ -122,6 +139,9 @@ function render(d){
   DATA = d;
   $("result").classList.remove("hide");
   renderKpis(); renderCompare(); renderMaps();
+  const has = d.windows.length > 0;
+  $("quantum").classList.toggle("hide", !has);
+  if(!has) return;
   $("win").innerHTML = d.windows.map((w,i) => `<option value="${i}">${esc(w.label)} (${w.improved ? "improved" : "no change"})</option>`).join("");
   renderWindow();
 }
@@ -131,17 +151,20 @@ function renderKpis(){
   const vsNN = (M.nn.metrics.cost - M.hybrid.metrics.cost) / M.nn.metrics.cost * 100;
   const vsFC = (M.fcfs.metrics.cost - M.hybrid.metrics.cost) / M.fcfs.metrics.cost * 100;
   const vs2 = (M.two_opt.metrics.cost - M.hybrid.metrics.cost) / M.two_opt.metrics.cost * 100;
-  const qk = s.qiskit.error ? "not checked" : ("diff " + Number(s.qiskit.max_diff).toExponential(1) + ", depth " + s.qiskit.depth);
   const cards = [
     ["Cost saved vs FCFS baseline", vsFC.toFixed(1) + "%"],
     ["Cost saved vs nearest neighbour", vsNN.toFixed(1) + "%"],
-    ["Hybrid vs classical 2-opt", (vs2 >= 0 ? "-" : "+") + Math.abs(vs2).toFixed(1) + "% cost"],
-    ["P(valid tour): start to after QAOA", pct(s.valid_uniform) + " to " + pct(s.avg_valid_after)],
-    ["Rank of QAOA's top tour (0 = best)", s.avg_rank.toFixed(2) + " (random " + s.random_rank.toFixed(1) + ")"],
-    ["Windows improved by QAOA", s.improved_windows + " / " + s.windows],
-    ["Qubits per window / layers", s.qubits + " / p=" + s.reps],
-    ["Qiskit check", qk]
+    ["Hybrid vs classical 2-opt", (vs2 >= 0 ? "-" : "+") + Math.abs(vs2).toFixed(1) + "% cost"]
   ];
+  if(s.windows > 0){
+    const qk = s.qiskit.error ? "not checked" : ("diff " + Number(s.qiskit.max_diff).toExponential(1) + ", depth " + s.qiskit.depth);
+    cards.push(
+      ["P(valid tour): start to after QAOA", pct(s.valid_uniform) + " to " + pct(s.avg_valid_after)],
+      ["Rank of QAOA's top tour (0 = best)", s.avg_rank.toFixed(2) + " (random " + s.random_rank.toFixed(1) + ")"],
+      ["Windows improved by QAOA", s.improved_windows + " / " + s.windows],
+      ["Qubits per window / layers", s.qubits + " / p=" + s.reps],
+      ["Qiskit check", qk]);
+  }
   $("kpis").innerHTML = cards.map(c => `<div class="card kpi"><span>${c[0]}</span><b>${c[1]}</b></div>`).join("");
 }
 
@@ -242,14 +265,13 @@ function lineChart(svgId, series, labels, ymax, xlab){
 function layerChart(w){
   const valid = w.valid_prob_layers, invalid = valid.map(v => 1 - v);
   const labels = valid.map((_, i) => i === 0 ? "start" : "layer " + i);
-  lineChart("c_layers", [{v: invalid, color: "#f87171", dots: true}, {v: valid, color: "#34d399", dots: true}], labels, 1, "uniform superposition, then each QAOA layer");
+  lineChart("c_layers", [{v: invalid, color: "#f87171", dots: true}, {v: valid, color: "#34d399", dots: true}], labels, 1, "");
 }
 
 function histChart(w){
   const h = w.history, mn = Math.min(...h), mx = Math.max(...h);
   const span = (mx - mn) || 1, ymax = mx - mn + span * 0.1;
-  lineChart("c_hist", [{v: h.map(v => v - mn + span * 0.05), color: "#a78bfa"}], null, ymax, "optimiser iterations (lower = better)");
-  $("hist_note").textContent = "Expected QUBO cost went from " + mx.toFixed(2) + " to " + h[h.length-1].toFixed(2) + " in " + h.length + " iterations (y-axis shows the drop above the minimum).";
+  lineChart("c_hist", [{v: h.map(v => v - mn + span * 0.05), color: "#a78bfa"}], null, ymax, "iterations");
 }
 
 function renderRose(){
@@ -266,9 +288,8 @@ function renderRose(){
   s += `<line x1="${cx}" y1="${cy}" x2="${tip.split(",")[0]}" y2="${tip.split(",")[1]}" stroke="${TYPE_COLOR[t.type]}" stroke-width="4" stroke-linecap="round"/>` +
        `<circle cx="${tip.split(",")[0]}" cy="${tip.split(",")[1]}" r="6" fill="${TYPE_COLOR[t.type]}"/>`;
   $("c_rose").innerHTML = s;
-  $("rose_title").textContent = "Arrow directions of all paths reaching tour " + t.tour.join(" > ");
-  $("rose_note").innerHTML = "Purple wedges: how much path amplitude points in each direction. Spread evenly = arrows cancel; concentrated = they add up. " +
-    "Coloured arrow = their sum (length = coherence " + t.coherence + "). Interference factor <b>" + t.factor + "</b> = <span class=\"badge c-" + t.type + "\">" + t.type + "</span>";
+  $("rose_title").textContent = "Interference arrows: " + t.tour.join(" > ");
+  $("rose_note").innerHTML = "Factor <b>" + t.factor + "</b> &nbsp;<span class=\"badge c-" + t.type + "\">" + t.type + "</span> &nbsp;coherence " + t.coherence;
 }
 
 function tourTable(T){

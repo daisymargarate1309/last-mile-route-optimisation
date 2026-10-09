@@ -3,6 +3,7 @@ Classical: build routes (nearest neighbour) and judge every candidate with the e
 Quantum:   slide a window of k consecutive stops along each route; QAOA re-orders the window.
 A QAOA answer is accepted ONLY if the exact route cost really improves."""
 import itertools
+import time
 import numpy as np
 from backend.vrp import route_cost
 from backend.qubo_window import build_window_qubo, tour_to_index
@@ -63,15 +64,37 @@ def solve_window(P, route, s, k, reps, maxiter, restarts, seed):
         "engine": eng,
     }
 
+def window_starts(length, k):
+    """Short routes: overlapping windows. Long routes: windows side by side (keeps run time bounded)."""
+    if length <= 6:
+        return list(range(0, length - k + 1))
+    starts = list(range(0, length - k + 1, k))
+    if starts[-1] != length - k:
+        starts.append(length - k)
+    return starts
 
-def hybrid_solve(P, start_routes, k=3, reps=3, maxiter=150, restarts=3, seed=7, verbose=True):
+
+def hybrid_solve(P, start_routes, k=3, reps=3, maxiter=150, restarts=3, seed=7, verbose=True,
+                 time_limit=None, max_windows=None, info=None):
     routes = [list(r) for r in start_routes]
     logs = []
+    t0 = time.time()
+    active = [r for r in routes if len(r) >= 2]
+    per_route = None
+    if max_windows and active:
+        per_route = max(1, max_windows // len(active))        # share the window budget between vehicles
     for v, route in enumerate(routes):
         kk = min(k, len(route))
         if kk < 2:
             continue
-        for s in range(0, len(route) - kk + 1):
+        starts = window_starts(len(route), kk)
+        if per_route:
+            starts = starts[:per_route]
+        for s in starts:
+            if time_limit and time.time() - t0 > time_limit:
+                if info is not None:
+                    info["truncated"] = True
+                return routes, logs
             w = solve_window(P, route, s, kk, reps, maxiter, restarts, seed + 31 * v + s)
             before = route_cost(P, route)
             if w["improved"]:

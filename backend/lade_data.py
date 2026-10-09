@@ -41,7 +41,9 @@ def list_days(mode="pickup", top=10):
     return load_raw(mode)["ds"].value_counts().head(top)
 def select_orders(mode="pickup", n=20, ds=None, region_id=None, seed=42,
                   radius_km=6.0, slot_span_min=180):
-    """Return n orders of ONE day, in one service area (radius_km) and one time slot (slot_span_min)."""
+    """Return n orders of ONE day, in one service area and one time slot.
+    If the area / slot has too few orders, the radius and slot are widened automatically."""
+    seed = abs(int(seed)) % (2 ** 31)
     df = load_raw(mode).dropna(subset=["lng", "lat", "accept_time"])
     if region_id is not None:
         df = df[df["region_id"] == region_id]
@@ -62,15 +64,23 @@ def select_orders(mode="pickup", n=20, ds=None, region_id=None, seed=42,
     df["_key"] = df["lng"].round(4).astype(str) + "_" + df["lat"].round(4).astype(str)
     df = df.drop_duplicates("_key")
 
-    # keep one busy time slot: orders whose window opens close to the most common opening time
+    # one busy time slot: orders whose window opens close to the most common opening time
     common = df["ready"].mode().iloc[0]
-    df = df[(df["ready"] - common).abs() <= slot_span_min]
+    day = df
+    for span in (slot_span_min, 360, 1e9):
+        df = day[(day["ready"] - common).abs() <= span]
+        if len(df) >= n:
+            break
 
-    # random anchor order (seed), then n random orders within radius_km of it
+    # random anchor order (seed), then n random orders within radius_km (radius grows if needed)
     anchor = df.sample(1, random_state=seed).iloc[0]
     coslat = np.cos(np.radians(anchor["lat"]))
     dkm = 111.2 * np.sqrt((df["lat"] - anchor["lat"]) ** 2 + ((df["lng"] - anchor["lng"]) * coslat) ** 2)
-    df = df[dkm <= radius_km]
+    for r in (radius_km, radius_km * 1.5, radius_km * 2, radius_km * 4, radius_km * 8, 1e9):
+        near = df[dkm <= r]
+        if len(near) >= n:
+            break
+    df = near
     if len(df) > n:
         df = df.sample(n=n, random_state=seed)
 
@@ -78,4 +88,3 @@ def select_orders(mode="pickup", n=20, ds=None, region_id=None, seed=42,
     out = df[cols].reset_index(drop=True)
     out.attrs["ds"] = ds
     return out
-

@@ -27,23 +27,14 @@ def health():
 
 
 @app.get("/api/optimize")
-def optimize(mode: str = "pickup", n_orders: int = 20, n_vehicles: int = 4, capacity: int = 8,
-             traffic: str = "normal", k: int = 3, reps: int = 3, seed: int = 42):
-    if mode not in ("pickup", "delivery"):
-        raise HTTPException(400, "mode must be pickup or delivery")
-    if traffic not in ("free", "normal", "peak"):
-        raise HTTPException(400, "traffic must be free, normal or peak")
-    if not 8 <= n_orders <= 40:
-        raise HTTPException(400, "n_orders must be between 8 and 40")
-    if k not in (3, 4):
-        raise HTTPException(400, "k (stops per quantum window) must be 3 or 4")
-    if not 1 <= reps <= 4:
-        raise HTTPException(400, "reps must be between 1 and 4")
+def optimize(mode: str = "pickup", n_orders: str = "20", n_vehicles: str = "4", capacity: str = "8",
+             traffic: str = "normal", k: str = "3", reps: str = "3", seed: str = "42"):
+    # values are validated / clamped inside run_optimization, so any input still gives an answer
     if not _run_lock.acquire(blocking=False):
-        raise HTTPException(429, "Another optimisation is running. Please wait.")
+        raise HTTPException(429, "Another run is in progress. Please wait.")
     try:
-        return run_optimization(mode=mode, n_orders=n_orders, n_vehicles=n_vehicles,
-                                capacity=capacity, traffic=traffic, k=k, reps=reps, seed=seed)
+        return run_optimization(mode=mode, n_orders=n_orders, n_vehicles=n_vehicles, capacity=capacity,
+                                traffic=traffic, k=k, reps=reps, seed=seed)
     except ValueError as e:
         raise HTTPException(400, str(e))
     finally:
